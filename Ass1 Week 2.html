@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ควบคุม ESP32 Pin 1</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #2c3e50;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: #333;
+        }
+        .control-panel {
+            background-color: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 15px 25px rgba(0,0,0,0.2);
+            text-align: center;
+            width: 300px;
+        }
+        h2 { margin-top: 0; color: #2c3e50; }
+        .btn {
+            background-color: #e74c3c; /* สีแดง (สถานะปิด) */
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: 0.3s;
+            width: 100%;
+            margin-top: 20px;
+            font-family: 'Prompt', sans-serif;
+        }
+        .btn.active {
+            background-color: #2ecc71; /* สีเขียว (สถานะเปิด) */
+        }
+        .btn:hover { transform: scale(1.05); }
+        .status-text { margin-top: 20px; font-size: 14px; color: #7f8c8d; }
+    </style>
+</head>
+<body>
+
+    <div class="control-panel">
+        <h2>ควบคุม Output Pin 1</h2>
+        <button id="toggleBtn" class="btn" onclick="togglePin()">TURN ON</button>
+        <div id="status" class="status-text">สถานะ: รอการสั่งงาน...</div>
+    </div>
+
+    <script>
+        // ⚠️ สำคัญ: เปลี่ยนที่อยู่ IP ด้านล่างให้ตรงกับ IP ที่ ESP32 ของคุณได้รับจาก WiFi
+        const esp32_IP = "http://172.20.10.3"; 
+        let isPinOn = false;
+
+        function togglePin() {
+            const btn = document.getElementById('toggleBtn');
+            const statusText = document.getElementById('status');
+            
+            // สลับสถานะตัวแปร
+            isPinOn = !isPinOn; 
+            
+            // กำหนด Path ที่จะส่งไปหา ESP32 (เช่น /on หรือ /off)
+            const command = isPinOn ? "/on" : "/off";
+
+            statusText.innerText = "กำลังส่งคำสั่ง...";
+
+            // ส่ง HTTP Request ไปที่ ESP32
+            fetch(esp32_IP + command)
+                .then(response => {
+                    if (response.ok) {
+                        if (isPinOn) {
+                            btn.classList.add('active');
+                            btn.innerText = "TURN OFF";
+                            statusText.innerText = "สถานะปัจจุบัน: เปิด (ON)";
+                        } else {
+                            btn.classList.remove('active');
+                            btn.innerText = "TURN ON";
+                            statusText.innerText = "สถานะปัจจุบัน: ปิด (OFF)";
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                    statusText.innerText = "❌ ไม่สามารถเชื่อมต่อกับ ESP32 ได้";
+                    statusText.style.color = "red";
+                    isPinOn = !isPinOn; // คืนค่าสถานะกลับหากส่งคำสั่งไม่สำเร็จ
+                });
+        }
+    </script>
+</body>
+</html>
